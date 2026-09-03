@@ -70,8 +70,11 @@
 import sempy_labs
 from sempy_labs.directlake import generate_direct_lake_semantic_model
 from sempy_labs.tom import connect_semantic_model
+from importlib.metadata import version
 
-print(f"semantic-link-labs {sempy_labs.__version__}")
+# El paquete no expone __version__; la version se consulta a los metadatos
+# de la distribucion instalada.
+print(f"semantic-link-labs {version('semantic-link-labs')}")
 
 # Los nombres de las tablas del modelo semantico se convierten en los nombres de las
 # entidades de la ontologia. Por eso los ponemos en singular y en lenguaje de negocio,
