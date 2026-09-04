@@ -44,9 +44,22 @@
 # CELL ********************
 
 # semantic-link-labs no viene preinstalado en el runtime de Fabric.
-# Va PRIMERO, antes del %run: %pip reinicia el interprete de Python y se
-# llevaria por delante las variables y funciones que define nb_00_setup.
-%pip install semantic-link-labs --quiet
+#
+# Se usa !pip y no %pip a proposito. %pip reinicia el interprete de Python, y
+# ese reinicio hace fallar el notebook cuando se ejecuta como job o agendado:
+# la sesion de Spark se cancela con "System cancelled the Spark session due to
+# statement execution failures", sin llegar a ejecutar ninguna celda.
+# !pip no reinicia nada y funciona igual en el editor que en un job.
+# Verificado contra un workspace real: con %pip el job muere a los 20 segundos;
+# con !pip completa.
+#
+# sempy_labs corre entero en el driver, asi que instalar solo ahi es suficiente.
+# Para una libreria que se use dentro de UDFs en los executors haria falta un
+# Environment de Fabric con la libreria adjunta.
+#
+# Va igual en la PRIMERA celda, antes del %run, para que nb_00_setup se ejecute
+# con la libreria ya disponible.
+!pip install semantic-link-labs --quiet
 
 # METADATA ********************
 
