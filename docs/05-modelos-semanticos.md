@@ -68,7 +68,7 @@ generate_direct_lake_semantic_model(
     source=LH_SILVER,
     source_type="Lakehouse",
     workspace=WORKSPACE_ID,
-    refresh=True,
+    refresh=False,               # ← el refresco va en su propia celda
     inherit_descriptions=True,   # ← el eslabón
     overwrite=True,
 )
@@ -77,6 +77,12 @@ generate_direct_lake_semantic_model(
 `inherit_descriptions=True` es lo que engancha con `nb_02`: toma los comentarios que dejamos en las columnas Delta y los convierte en descripciones del modelo semántico. De ahí bajarán a la ontología.
 
 `overwrite=True` hace el notebook re-ejecutable, que en un taller en vivo vale oro.
+
+> **`refresh=False` no es un detalle.** Con `refresh=True`, el framing del modelo Direct Lake ocurre **dentro del bucle**. En una capacidad chica ese framing puede tardar muchos minutos, y si se cuelga se lleva por delante los modelos que faltan: te quedas con el primero creado y sin los otros dos, y ningún mensaje te dice que eso fue lo que pasó. Verificado en vivo: el bucle quedó 15 minutos en el primer modelo hasta que hubo que cancelarlo, y `sm_polar_ventas` quedó con sus tablas pero sin relaciones.
+>
+> Con el refresco separado, los tres modelos se crean en segundos. Y si la celda de refresco se demora, se cancela y se sigue: **las relaciones, las claves y las medidas no necesitan el modelo refrescado**.
+
+Cada modelo va además en su propio `try`. Si uno falla, los otros dos se crean igual y al final se imprime un resumen de qué quedó bien y qué no. En un taller en vivo eso vale más que abortar todo al primer problema.
 
 ### 2 · Relaciones
 

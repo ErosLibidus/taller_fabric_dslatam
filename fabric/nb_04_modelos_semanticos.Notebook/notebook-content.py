@@ -121,18 +121,82 @@ MODELOS = {
 
 # CELL ********************
 
+# Se crean los tres SIN refrescar. El refresco va aparte, en la celda siguiente.
+#
+# Motivo: refresh=True dispara el framing del modelo Direct Lake dentro del bucle.
+# En capacidades chicas ese framing puede tardar muchos minutos o quedarse colgado,
+# y como ocurre dentro del bucle se lleva por delante los modelos que faltan: te
+# quedas con el primero creado y sin los otros dos. Separarlo hace que la creacion
+# de los tres sea rapida y que un refresco lento no bloquee nada.
+#
+# Ademas cada modelo va en su propio try: si uno falla, los otros dos se crean igual
+# y al final ves el resumen de que quedo bien y que no. En un taller en vivo eso
+# vale mas que abortar todo al primer problema.
+
+errores = {}
+
 for nombre, tablas in MODELOS.items():
     print(f"\n=== {nombre} ===")
-    generate_direct_lake_semantic_model(
-        dataset=nombre,
-        tables=tablas,
-        source=LH_SILVER,
-        source_type="Lakehouse",
-        workspace=WORKSPACE_ID,
-        refresh=True,
-        inherit_descriptions=True,   # comentarios Delta -> descripciones del modelo
-        overwrite=True,              # el notebook es re-ejecutable
-    )
+    try:
+        generate_direct_lake_semantic_model(
+            dataset=nombre,
+            tables=tablas,
+            source=LH_SILVER,
+            source_type="Lakehouse",
+            workspace=WORKSPACE_ID,
+            refresh=False,               # el refresco va aparte (ver celda siguiente)
+            inherit_descriptions=True,   # comentarios Delta -> descripciones del modelo
+            overwrite=True,              # el notebook es re-ejecutable
+        )
+        print(f"  creado ({len(tablas)} tablas)")
+    except Exception as e:
+        errores[nombre] = f"{type(e).__name__}: {e}"
+        print(f"  FALLO -> {type(e).__name__}: {e}")
+
+print("\n--- resumen ---")
+for nombre in MODELOS:
+    print(f"  {nombre:26s} {'ERROR' if nombre in errores else 'ok'}")
+if errores:
+    print("\nDetalle de los fallos:")
+    for nombre, msg in errores.items():
+        print(f"  {nombre}: {msg}")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# MARKDOWN ********************
+
+# ## Refresco (framing) de los tres modelos
+#
+# En Direct Lake el refresco no copia datos: hace el *framing*, que es dejar apuntando
+# el modelo a la versión actual de los archivos Delta. Normalmente es rápido, pero en
+# capacidades chicas o con la capacidad ocupada puede tardar varios minutos.
+#
+# Va en su propia celda a propósito. Si esta celda se demora, **los tres modelos ya
+# están creados** y puedes seguir con el resto del notebook: las relaciones, las claves
+# y las medidas no necesitan que el modelo esté refrescado.
+#
+# > Si la celda queda colgada más de 3 o 4 minutos, cancélala y sigue. El refresco
+# > también ocurre solo la primera vez que alguien consulta el modelo.
+
+# CELL ********************
+
+from sempy_labs import refresh_semantic_model
+
+for nombre in MODELOS:
+    if nombre in errores:
+        print(f"  {nombre:26s} se omite (no se creo)")
+        continue
+    try:
+        refresh_semantic_model(dataset=nombre, workspace=WORKSPACE_ID)
+        print(f"  {nombre:26s} refrescado")
+    except Exception as e:
+        # Un refresco fallido no impide seguir: el modelo existe y es consultable.
+        print(f"  {nombre:26s} refresco fallido ({type(e).__name__}) - se puede continuar")
 
 # METADATA ********************
 
