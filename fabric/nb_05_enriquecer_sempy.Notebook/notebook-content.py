@@ -215,7 +215,7 @@ VOCABULARIO = [
     ("LecturaSensor", "excursion_termica", [
         "quiebre de cadena de frio", "excursion", "sobre temperatura",
         "fuera de rango", "riesgo de frio",
-    ], 1.0),
+    ], 0.95),
     ("LecturaSensor", "alarma", ["alerta", "aviso del equipo"], None),
 ]
 
@@ -228,7 +228,6 @@ VOCABULARIO = [
 
 # CELL ********************
 
-from decimal import Decimal
 
 total = 0
 for modelo in MODELOS:
@@ -244,11 +243,21 @@ for modelo in MODELOS:
             objeto = (tom.model.Tables[tabla] if columna is None
                       else tom.model.Tables[tabla].Columns[columna])
             for s in sinonimos:
+                # Dos trampas del parametro weight, ambas verificadas en vivo
+                # contra semantic-link-labs 0.17.0:
+                #
+                # 1. Va como float, NO como Decimal. La documentacion pide Decimal,
+                #    pero set_synonym guarda el valor en el esquema linguistico y lo
+                #    serializa con json.dumps, que no sabe convertir un Decimal:
+                #    "TypeError: Object of type Decimal is not JSON serializable".
+                #
+                # 2. El rango es abierto: 0 < weight < 1. Un peso de 1.0 lanza
+                #    ValueError. Para "el sinonimo mas fuerte" usa 0.95, no 1.0.
                 tom.set_synonym(
                     culture=CULTURA,
                     object=objeto,
                     synonym_name=s,
-                    weight=Decimal(str(peso)) if peso is not None else None,
+                    weight=float(peso) if peso is not None else None,
                 )
                 aplicados += 1
     total += aplicados
