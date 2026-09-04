@@ -151,6 +151,40 @@ Están repartidas por los notebooks, pero conviene tenerlas juntas desde el prin
 
 ---
 
+## Actualizaciones · 3 de septiembre de 2026
+
+Los notebooks 4, 5 y 99 se corrigieron después de ejecutarlos **contra un workspace real**. Si hiciste fork durante el taller, tu copia tiene las versiones con errores.
+
+| # | Qué fallaba | Corrección |
+|---|---|---|
+| `nb_04` | `sempy_labs.__version__` no existe → `AttributeError` en la celda de imports | La versión se lee con `importlib.metadata.version` |
+| `nb_04` | `refresh=True` dentro del bucle: el framing del modelo Direct Lake se colgaba en el primer modelo y los otros dos nunca se creaban | El refresco pasa a su propia celda, cancelable sin consecuencias |
+| `nb_05` | `weight=Decimal(...)` rompe `set_synonym`: la librería serializa con `json.dumps` y no sabe convertir `Decimal` | El peso va como `float` |
+| `nb_05` | Un sinónimo con peso `1.0`; el rango válido es abierto, `0 < peso < 1` | Bajado a `0.95` |
+| `nb_04`, `nb_05`, `nb_99` | `%pip install` reinicia el intérprete y cancela la sesión al ejecutar como job | Se usa `!pip install` |
+
+Verificado de punta a punta: los tres modelos semánticos quedan completos (tablas, relaciones, claves y medidas), con **127 sinónimos** en cultura `es-ES`, y `nb_99` termina con *"Todo en orden. Puedes generar la ontología."*
+
+### Cómo actualizar tu fork
+
+**Ojo:** si conectaste tu fork a Fabric y confirmaste tus items, tu fork modificó **esos mismos tres notebooks**. Un "Sync fork" te va a dar conflictos.
+
+**Si no tocaste tu fork** — usa el botón **Sync fork** en GitHub. Listo.
+
+**Si ya confirmaste items desde Fabric** — trae solo los tres archivos corregidos, sin merge y sin conflictos:
+
+```bash
+git remote add upstream https://github.com/wcalcagno/taller_fabric_dslatam.git
+git fetch upstream
+git checkout upstream/main -- fabric/nb_04_modelos_semanticos.Notebook/notebook-content.py fabric/nb_05_enriquecer_sempy.Notebook/notebook-content.py fabric/nb_99_validacion.Notebook/notebook-content.py
+git commit -m "Traer correcciones del repo del taller"
+git push
+```
+
+Después, en tu workspace de Fabric: **Control de código fuente → Update all**, y vuelve a ejecutar `nb_04`.
+
+---
+
 ## Licencia y uso
 
 Material desarrollado para talleres de ingeniería de datos en Microsoft Fabric. Uso libre para fines formativos citando la fuente. Los datos son sintéticos y no representan a ninguna organización real.
